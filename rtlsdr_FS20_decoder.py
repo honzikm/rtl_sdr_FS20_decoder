@@ -11,9 +11,13 @@ NOTE: The data aquisition part and OOK decoder is originally from Kevin Mehall
 
 from gnuradio import gr
 import gr_queue
-from gnuradio import blks2
 from gnuradio import audio
-from gnuradio.gr import firdes
+from gnuradio.filter import firdes
+from gnuradio import filter
+#from gnuradio import blks2
+#from gnuradio.blks2 import rational_res
+#import gnuradio.analog
+from gnuradio import analog
 import osmosdr
 
 
@@ -39,25 +43,28 @@ class rtlsdr_am_stream(gr.top_block):
         output_rate = audio_rate / float(decimate_am)
         self.rate = output_rate
         
-        self.osmosdr_source = osmosdr.source_c("")
+#        self.osmosdr_source = osmosdr.source_c("")
+	self.osmosdr_source = osmosdr.source("")
         self.osmosdr_source.set_sample_rate(device_rate)
         self.osmosdr_source.set_center_freq(freq)
               
         self.osmosdr_source.set_freq_corr(0, 0)
-        self.osmosdr_source.set_gain_mode(1, 0)
+        #self.osmosdr_source.set_gain_mode(1, 0)
+        self.osmosdr_source.set_gain_mode(True, 0)
         self.osmosdr_source.set_gain(20, 0)
                      
         taps = firdes.low_pass(1, device_rate, 40000, 5000, firdes.WIN_HAMMING, 6.76)
-        self.freq_filter = gr.freq_xlating_fir_filter_ccc(25, taps, -freq_offs, device_rate)
+        #self.freq_filter = gr.freq_xlating_fir_filter_ccc(25, taps, -freq_offs, device_rate)
+        self.freq_filter = filter.freq_xlating_fir_filter_ccc(25, taps, -freq_offs, device_rate)
     
-        self.am_demod = blks2.am_demod_cf(
+        self.am_demod = analog.am_demod_cf(
             channel_rate=audio_rate,
             audio_decim=1,
             audio_pass=5000,
             audio_stop=5500,
         )
         
-        self.resampler = blks2.rational_resampler_fff(
+        self.resampler = filter.rational_resampler_fff(
             interpolation=1,
             decimation=decimate_am,
         )
